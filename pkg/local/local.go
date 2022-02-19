@@ -80,6 +80,7 @@ func localWorker(quit <-chan struct{}, binary <-chan localBinaryMessage, text <-
 	}
 }
 
+
 func New(nWorkers uint) *LocalChannels {
 	quit := make(chan struct{})
 	binary := make(chan localBinaryMessage)
@@ -99,10 +100,11 @@ func New(nWorkers uint) *LocalChannels {
 }
 
 func (l *LocalChannels) Quit() {
-	l.mutex.RLock()
+	l.mutex.Lock()
 	var i uint
 	for i = 0; i < l.nWorkers; i++ {
 		l.quit <- struct{}{}
 	}
-	l.mutex.RUnlock()
+	l.nWorkers = 0
+	l.mutex.Unlock()
 }
