@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/gudn/sockroom"
+	"github.com/gudn/sockroom/pkg/local"
 )
 
 func main() {
@@ -28,7 +29,7 @@ func run() error {
 	}
 	log.Printf("listening on http://%v", l.Addr())
 
-	http.HandleFunc("/", sockroom.Handler)
+	handler := sockroom.New(local.New(1))
 
-	return http.Serve(l, nil)
+	return http.Serve(l, handler)
 }
