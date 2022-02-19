@@ -29,7 +29,9 @@ func run() error {
 	}
 	log.Printf("listening on http://%v", l.Addr())
 
-	handler := sockroom.New(local.New(1))
+	chans := local.New(1)
+	defer chans.Quit()
+	handler := sockroom.New(chans)
 
 	return http.Serve(l, handler)
 }
