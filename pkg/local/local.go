@@ -70,12 +70,12 @@ func (l *LocalChannels) PublishText(channel, data string, mt interface{}) error 
 func localWorker(quit <-chan struct{}, binary <-chan localBinaryMessage, text <-chan localTextMessage) {
 	for {
 		select {
-		case <-quit:
-			return
 		case b := <-binary:
 			b.s.WriteBinary(b.data, b.mt)
 		case t := <-text:
 			t.s.WriteText(t.data, t.mt)
+		case <-quit:
+			return
 		}
 	}
 }
