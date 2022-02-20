@@ -19,6 +19,14 @@ services:
     - 8080:80
     depends_on:
     - nats
+  sockroom2:
+    build: .
+    volumes:
+    - ./config.docker.toml:/config.toml
+    ports:
+    - 8081:80
+    depends_on:
+    - nats
   prometheus:
     image: bitnami/prometheus:2
     volumes:
