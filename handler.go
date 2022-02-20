@@ -3,12 +3,20 @@ package sockroom
 import (
 	"errors"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 
+	"go.uber.org/zap"
 	"nhooyr.io/websocket"
+
+	_ "github.com/gudn/sockroom/internal/log"
 )
+
+var logger *zap.Logger
+
+func init() {
+	logger = zap.L()
+}
 
 type Handler struct {
 	chans Channels
@@ -17,7 +25,7 @@ type Handler struct {
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	c, err := websocket.Accept(w, r, &websocket.AcceptOptions{})
 	if err != nil {
-		log.Printf("error accepting websocket: %v", err)
+		logger.Warn("error accepting connnection", zap.Error(err))
 		return
 	}
 	ctx := r.Context()
@@ -40,6 +48,11 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, io.EOF) {
 			return
 		}
+		if err != nil {
+			s.WriteText("", map[string]interface{}{"error": "failed read message"})
+			logger.Warn("failed read", zap.Error(err))
+			return
+		}
 		if type_ == websocket.MessageBinary {
 			err = h.chans.PublishBinary(s.Room, data, mt)
 		} else {
@@ -47,7 +60,9 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		if err != nil {
 			err = s.WriteText("", map[string]interface{}{"error": "failed publish message"})
+			logger.Warn("failed publish message", zap.String("room", s.Room), zap.Error(err))
 			if err != nil {
+				logger.Warn("failed send error", zap.Error(err))
 				return
 			}
 		}

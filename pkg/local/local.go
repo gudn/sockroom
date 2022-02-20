@@ -1,13 +1,20 @@
 package local
 
 import (
-	"log"
 	"sync"
 
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 
 	"github.com/gudn/sockroom"
+	_ "github.com/gudn/sockroom/internal/log"
 )
+
+var logger *zap.Logger
+
+func init() {
+	logger = zap.L()
+}
 
 type localBinaryMessage struct {
 	s    *sockroom.Subscriber
@@ -40,6 +47,7 @@ func (l *LocalChannels) Join(s *sockroom.Subscriber) error {
 	}
 	room[s] = struct{}{}
 	l.mutex.Unlock()
+	logger.Info("joined to room", zap.String("room", s.Room))
 	return nil
 }
 
@@ -50,6 +58,7 @@ func (l *LocalChannels) Unjoin(s *sockroom.Subscriber) error {
 		delete(l.subsribers, s.Room)
 	}
 	l.mutex.Unlock()
+	logger.Info("unjoined from room", zap.String("room", s.Room))
 	return nil
 }
 
@@ -85,7 +94,7 @@ func localWorker(quit <-chan struct{}, binary <-chan localBinaryMessage, text <-
 }
 
 func (l *LocalChannels) setNWorkersLocked(n uint) {
-	log.Printf("change nWorkers from %v to %v", l.nWorkers, n)
+	logger.Info("change nworkers", zap.Uint("from", l.nWorkers), zap.Uint("to", n))
 	if n > l.nWorkers {
 		delta := n - l.nWorkers
 		var i uint
@@ -151,7 +160,11 @@ func (l *LocalChannels) Reload() {
 	if bufSize != l.bufSize {
 		oldQuit := l.quit
 		u := l.nWorkers
-		log.Printf("recreate local channels with nWorkers = %v, bufSize = %v", nWorkers, bufSize)
+		logger.Info(
+			"recreate local channels",
+			zap.Uint("nworkers", nWorkers),
+			zap.Uint("bufSize", bufSize),
+		)
 		newL := newWith(nWorkers, bufSize, l.mutex)
 		newL.subsribers = l.subsribers
 		*l = *newL
@@ -166,6 +179,10 @@ func (l *LocalChannels) Reload() {
 
 func New() *LocalChannels {
 	nWorkers, bufSize := readConfig()
-	log.Printf("create local channels with nWorkers = %v, bufSize = %v", nWorkers, bufSize)
+	logger.Info(
+		"create local channels",
+		zap.Uint("nworkers", nWorkers),
+		zap.Uint("bufSize", bufSize),
+	)
 	return newWith(nWorkers, bufSize, &sync.RWMutex{})
 }
