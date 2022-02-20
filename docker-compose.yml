@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+  sockroom:
+    build: .
+    ports:
+    - 8080:80
+  prometheus:
+    image: bitnami/prometheus:2
+    volumes:
+    - ./prometheus.yml:/opt/bitnami/prometheus/conf/prometheus.yml
+    ports:
+    - 9090:9090

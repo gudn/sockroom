@@ -44,10 +44,12 @@ func (l *LocalChannels) Join(s *sockroom.Subscriber) error {
 	if room == nil {
 		room = make(map[*sockroom.Subscriber]struct{})
 		l.subsribers[s.Room] = room
+		sockroom.ActiveRooms.Inc()
 	}
 	room[s] = struct{}{}
 	l.mutex.Unlock()
 	logger.Info("joined to room", zap.String("room", s.Room))
+	sockroom.ActiveSockets.Inc()
 	return nil
 }
 
@@ -56,9 +58,11 @@ func (l *LocalChannels) Unjoin(s *sockroom.Subscriber) error {
 	delete(l.subsribers[s.Room], s)
 	if len(l.subsribers[s.Room]) == 0 {
 		delete(l.subsribers, s.Room)
+		sockroom.ActiveRooms.Dec()
 	}
 	l.mutex.Unlock()
 	logger.Info("unjoined from room", zap.String("room", s.Room))
+	sockroom.ActiveSockets.Dec()
 	return nil
 }
 
@@ -68,6 +72,7 @@ func (l *LocalChannels) PublishBinary(channel string, data []byte, mt interface{
 		l.binaryMessages <- localBinaryMessage{k, data, mt}
 	}
 	l.mutex.RUnlock()
+	sockroom.InBuffer.Inc()
 	return nil
 }
 
@@ -77,6 +82,7 @@ func (l *LocalChannels) PublishText(channel, data string, mt interface{}) error 
 		l.textMessages <- localTextMessage{k, data, mt}
 	}
 	l.mutex.RUnlock()
+	sockroom.InBuffer.Inc()
 	return nil
 }
 
@@ -90,6 +96,7 @@ func localWorker(quit <-chan struct{}, binary <-chan localBinaryMessage, text <-
 		case <-quit:
 			return
 		}
+		sockroom.InBuffer.Dec()
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
@@ -36,5 +37,9 @@ func run() error {
 	})
 	handler := sockroom.New(chans)
 
-	return http.Serve(l, handler)
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.Handler())
+	mux.Handle("/", handler)
+
+	return http.Serve(l, mux)
 }
