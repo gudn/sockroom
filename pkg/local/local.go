@@ -8,6 +8,7 @@ import (
 
 	"github.com/gudn/sockroom"
 	_ "github.com/gudn/sockroom/internal/log"
+	_ "github.com/gudn/sockroom/internal/config"
 )
 
 var logger *zap.Logger

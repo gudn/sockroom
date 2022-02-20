@@ -11,10 +11,18 @@ import (
 
 	"github.com/gudn/sockroom"
 	"github.com/gudn/sockroom/pkg/local"
+	"github.com/gudn/sockroom/pkg/nats"
 
 	_ "github.com/gudn/sockroom/internal/config"
 	_ "github.com/gudn/sockroom/internal/log"
 )
+
+func mode() string {
+	if viper.IsSet("mode") {
+		return viper.GetString("mode")
+	}
+	return "local"
+}
 
 func main() {
 	err := run()
@@ -30,7 +38,20 @@ func run() error {
 	}
 	zap.L().Info("start listening", zap.String("bind", l.Addr().String()))
 
-	chans := local.New()
+	var chans sockroom.Channels
+
+	m := mode()
+	zap.L().Info("setup mode", zap.String("mode", m))
+
+	if m == "local" {
+		chans = local.New()
+	} else {
+		chans, err = nats.New()
+		if err != nil {
+			return err
+		}
+	}
+
 	defer chans.Quit()
 	viper.OnConfigChange(func(in fsnotify.Event) {
 		chans.Reload()
