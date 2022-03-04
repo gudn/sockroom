@@ -8,8 +8,8 @@ import (
 
 var (
 	ActiveSockets prometheus.Gauge
-	ActiveRooms prometheus.Gauge
-	InBuffer prometheus.Gauge
+	ActiveRooms   prometheus.Gauge
+	InBuffer      prometheus.Gauge
 )
 
 func init() {
